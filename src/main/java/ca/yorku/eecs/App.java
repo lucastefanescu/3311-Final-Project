@@ -18,6 +18,7 @@ public class App
         server.createContext("/api/v1/addRelationship", new AddRelationship(db));
         server.createContext("/api/v1/getActor", new getActor(db));
         server.createContext("/api/v1/getMovie", new getMovie(db));
+        server.createContext("/api/v1/hasRelationship", new hasRelationship(db));
 
         server.start();
         System.out.printf("Server started on port %d...\n", PORT);

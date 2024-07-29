@@ -87,16 +87,8 @@ public class getActor implements HttpHandler {
                 Record record = result.next();
                 JSONObject jsonResult = new JSONObject(record.get("result").asMap());
                 return jsonResult.toString();
-            } else {
-                JSONObject jsonResult = new JSONObject();
-                jsonResult.put("actorId", actorId);
-                jsonResult.put("name", JSONObject.NULL);
-                jsonResult.put("movies", new JSONArray());
-                return jsonResult.toString();
             }
-        } catch (JSONException e) {
-            e.printStackTrace();
-            return "An error occurred while processing the JSON request";
         }
+        return "An error occurred while processing the JSON request";
     }
 }

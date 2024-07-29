@@ -49,7 +49,6 @@ public class getMovie implements HttpHandler {
             }else{
                 movieId = httpReqDeserialized.getString("movieId");
                 String movie = retrieveMovie(movieId);
-                System.out.println(movie);
                 byte[] movieAsByteArray = movie.getBytes(StandardCharsets.UTF_8);
                 exchange.sendResponseHeaders(200, movieAsByteArray.length);
                 OutputStream outputStream = exchange.getResponseBody();
@@ -86,19 +85,12 @@ public class getMovie implements HttpHandler {
             Result result = session.run(query, map);
 
             if (result.hasNext()) {
+                System.out.println("hello");
                 Record record = result.next();
                 JSONObject jsonResult = new JSONObject(record.get("result").asMap());
                 return jsonResult.toString();
-            } else {
-                JSONObject jsonResult = new JSONObject();
-                jsonResult.put("movieId", movieId);
-                jsonResult.put("name", JSONObject.NULL);
-                jsonResult.put("actors", new JSONArray());
-                return jsonResult.toString();
             }
-        } catch (JSONException e) {
-            e.printStackTrace();
-            return "An error occurred while processing the JSON request";
         }
+        return "An error occurred while processing the JSON request";
     }
 }
