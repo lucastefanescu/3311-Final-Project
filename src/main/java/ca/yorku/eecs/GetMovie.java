@@ -2,7 +2,6 @@ package ca.yorku.eecs;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.neo4j.driver.Driver;
@@ -16,11 +15,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 
-public class getMovie implements HttpHandler {
+public class GetMovie implements HttpHandler {
     private final Driver driver;
     private String movieId;
 
-    public getMovie(neo4jDB db){
+    public GetMovie(neo4jDB db){
         driver = db.getDriver();
     }
     @Override

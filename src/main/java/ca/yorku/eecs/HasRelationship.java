@@ -16,11 +16,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class hasRelationship implements HttpHandler {
+public class HasRelationship implements HttpHandler {
 
     private final Driver driver;
 
-    public hasRelationship(neo4jDB db){
+    public HasRelationship(neo4jDB db){
         driver = db.getDriver();
     }
     @Override

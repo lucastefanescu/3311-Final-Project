@@ -40,17 +40,22 @@ public class AddMovie implements HttpHandler {
         }
     }
     public void handlePut(HttpExchange exchange) throws IOException, JSONException {
-        String body = Utils.convert(exchange.getRequestBody());
-        JSONObject httpReqDeserialized = new JSONObject(body);
+        try{
+            String body = Utils.convert(exchange.getRequestBody());
+            JSONObject httpReqDeserialized = new JSONObject(body);
 
-        if(!httpReqDeserialized.has("name") || !httpReqDeserialized.has("movieId") ||
-                movieExists(httpReqDeserialized.getString("movieId"))){
-            exchange.sendResponseHeaders(400, -1);
-        }else{
-            name = httpReqDeserialized.getString("name");
-            movieId = httpReqDeserialized.getString("movieId");
-            int status_code = addMovie(name, movieId);
-            exchange.sendResponseHeaders(status_code, -1);
+            if(!httpReqDeserialized.has("name") || !httpReqDeserialized.has("movieId") ||
+                    movieExists(httpReqDeserialized.getString("movieId"))){
+                exchange.sendResponseHeaders(400, -1);
+            }else{
+                name = httpReqDeserialized.getString("name");
+                movieId = httpReqDeserialized.getString("movieId");
+                int status_code = addMovie(name, movieId);
+                exchange.sendResponseHeaders(status_code, -1);
+            }
+        }catch(IOException | JSONException e){
+            exchange.sendResponseHeaders(500, -1);
+            e.printStackTrace();
         }
     }
     public int addMovie(String name, String movieId){
