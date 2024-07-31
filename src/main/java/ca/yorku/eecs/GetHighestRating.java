@@ -5,8 +5,8 @@ import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 
 import java.io.IOException;
@@ -15,14 +15,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 
-public class GetMovie implements HttpHandler {
+public class GetHighestRating implements HttpHandler {
     private final Driver driver;
-    private String movieId;
+    private String actorId;
 
-    public GetMovie(neo4jDB db){
+    public GetHighestRating(neo4jDB db){
         driver = db.getDriver();
     }
-    @Override
     public void handle(HttpExchange exchange) throws IOException {
         try{
             if(exchange.getRequestMethod().equals("GET")){
@@ -30,64 +29,62 @@ public class GetMovie implements HttpHandler {
             }else{
                 exchange.sendResponseHeaders(400, -1);
             }
-        }catch(IOException | JSONException e){
+        }catch (Exception e){
             exchange.sendResponseHeaders(500, -1);
             e.printStackTrace();
         }
     }
-
-    private void handleGet(HttpExchange exchange) throws IOException, JSONException {
+    public void handleGet(HttpExchange exchange) throws JSONException, IOException {
         try{
             String body = Utils.convert(exchange.getRequestBody());
             JSONObject httpReqDeserialized = new JSONObject(body);
 
-            if(!httpReqDeserialized.has("movieId")){
+            if(!httpReqDeserialized.has("actorId")){
                 exchange.sendResponseHeaders(400, -1);
-            }else if(!movieExists(httpReqDeserialized.getString("movieId"))){
+            }else if(!actorExists(httpReqDeserialized.getString("actorId"))){
                 exchange.sendResponseHeaders(404, -1);
             }else{
-                movieId = httpReqDeserialized.getString("movieId");
-                String movie = retrieveMovie(movieId);
-                byte[] movieAsByteArray = movie.getBytes(StandardCharsets.UTF_8);
-                exchange.sendResponseHeaders(200, movieAsByteArray.length);
+                actorId = httpReqDeserialized.getString("actorId");
+                String actor = retrieveHighestRatedMovie(actorId);
+                byte[] actorAsByteArray = actor.getBytes(StandardCharsets.UTF_8);
+                exchange.sendResponseHeaders(200, actorAsByteArray.length);
                 OutputStream outputStream = exchange.getResponseBody();
-                outputStream.write(movieAsByteArray);
+                outputStream.write(actorAsByteArray);
                 outputStream.close();
             }
-        } catch (IOException | JSONException e) {
+        }catch(JSONException | IOException e){
             exchange.sendResponseHeaders(500, -1);
             e.printStackTrace();
         }
     }
-    public boolean movieExists(String movieId){
-        String query = "MATCH (m:Movie) WHERE m.movieId = $movieId RETURN m";
-
-        Map<String, Object> map = Collections.singletonMap("movieId", movieId);
+    private boolean actorExists(String actorId) {
+        String query = "MATCH (a:Actor) WHERE a.actorId = $actorId RETURN a";
+        Map<String, Object> map = Collections.singletonMap("actorId", actorId);
 
         try(Session session = driver.session()){
             Result result = session.run(query, map);
-            if(result.hasNext()){
-                return true;
-            }else{
-                return false;
-            }
+            return result.hasNext();
         }
     }
-    public String retrieveMovie(String movieId){
-        String query = "MATCH (m:Movie {movieId: $movieId}) " +
-                "OPTIONAL MATCH (m)<-[:ACTED_IN]-(a:Actor) " +
-                "RETURN {movieId: m.movieId, name: m.name, actors: collect(a.name)} AS result";
+    public String retrieveHighestRatedMovie(String actorId){
+        String query = "MATCH (a:Actor {actorId: $actorId})-[:ACTED_IN]->(m:Movie) " +
+                "RETURN m.title AS title, m.rating AS rating " +
+                "ORDER BY m.rating DESC LIMIT 1";
 
-        Map map = Collections.singletonMap("movieId", movieId);
+        Map map = Collections.singletonMap("actorId", actorId);
 
         try (Session session = driver.session()) {
             Result result = session.run(query, map);
 
             if (result.hasNext()) {
                 Record record = result.next();
-                JSONObject jsonResult = new JSONObject(record.get("result").asMap());
+                JSONObject jsonResult = new JSONObject();
+                jsonResult.put("title", record.get("title").asString());
+                jsonResult.put("rating", record.get("rating").asDouble());
                 return jsonResult.toString();
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return "An error occurred while processing the JSON request";
     }
