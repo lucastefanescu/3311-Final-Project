@@ -17,13 +17,15 @@ import java.util.Map;
 /*
     TODO: only add movies if they aren't in the db
  */
-public class AddMovieWithRating implements HttpHandler {
+public class AddMovieWithDetails implements HttpHandler {
     private final Driver driver;
     private String movieId;
     private String name;
     private String rating;
+    private String genre;
+    private String nominated;
 
-    public AddMovieWithRating(neo4jDB db){
+    public AddMovieWithDetails(neo4jDB db){
         driver = db.getDriver();
     }
 
@@ -45,14 +47,25 @@ public class AddMovieWithRating implements HttpHandler {
             String body = Utils.convert(exchange.getRequestBody());
             JSONObject httpReqDeserialized = new JSONObject(body);
 
-            if(!httpReqDeserialized.has("name") || !httpReqDeserialized.has("movieId") || !httpReqDeserialized.has("rating") ||
+            if(!httpReqDeserialized.has("name") || !httpReqDeserialized.has("movieId") || !httpReqDeserialized.has("rating") || !httpReqDeserialized.has("genre") ||
                     movieExists(httpReqDeserialized.getString("movieId"))){
                 exchange.sendResponseHeaders(400, -1);
             }else{
                 name = httpReqDeserialized.getString("name");
                 movieId = httpReqDeserialized.getString("movieId");             	
-                rating = httpReqDeserialized.getString("rating");
-                int status_code = addMovie(name, movieId, rating);
+                if (!httpReqDeserialized.has("rating")) {
+                	rating = "0";
+                }
+                else {
+                	rating = httpReqDeserialized.getString("rating");
+                }
+                if (!httpReqDeserialized.has("nominated")) {
+                	nominated = "false";
+                }
+                else {
+                	nominated = httpReqDeserialized.getString("nominated");
+                }
+                int status_code = addMovie(name, movieId, rating, genre, nominated);
                 exchange.sendResponseHeaders(status_code, -1);
             }
         }catch(IOException | JSONException e){
@@ -60,12 +73,14 @@ public class AddMovieWithRating implements HttpHandler {
             e.printStackTrace();
         }
     }
-    public int addMovie(String name, String movieId, String rating){
-        String query = "CREATE (m:Movie {name: $name, movieId: $movieId, rating: $rating}) RETURN m";
+    public int addMovie(String name, String movieId, String rating, String genre, String nominated){
+        String query = "CREATE (m:Movie {name: $name, movieId: $movieId, rating: $rating, genre: $genre, nominated: $nominated}) RETURN m";
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("name", name);
         parameters.put("movieId", movieId);
         parameters.put("rating", rating);
+        parameters.put("genre", genre);
+        parameters.put("nominated", nominated);
 
         try(Session session = driver.session()){
             session.executeWrite(tx -> tx.run(query, parameters).consume());
