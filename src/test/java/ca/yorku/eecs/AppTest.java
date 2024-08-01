@@ -7,11 +7,18 @@ import com.sun.net.httpserver.HttpExchange;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.Session;
+import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
+import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.value.BooleanValue;
+import org.neo4j.driver.internal.value.IntegerValue;
+import org.neo4j.driver.internal.value.ListValue;
+import org.neo4j.driver.internal.value.StringValue;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -23,6 +30,8 @@ public class AppTest extends TestCase {
     private AddActor addActor;
     private AddMovie addMovie;
     private AddRelationship addRelationship;
+    private ComputeBaconNumber computeBaconNumber;
+    private ComputeBaconPath computeBaconPath;
     private Driver mockDriver;
     private HttpExchange mockExchange;
     private Session mockSession;
@@ -44,13 +53,6 @@ public class AppTest extends TestCase {
         return new TestSuite(AppTest.class);
     }
 
-    /**
-     * Rigorous Test :-)
-     */
-    public void testApp() {
-        assertTrue(true);
-    }
-
     @Override
     protected void setUp() throws Exception {
         super.setUp();
@@ -64,7 +66,16 @@ public class AppTest extends TestCase {
         addActor = new AddActor(mockDb);
         addMovie = new AddMovie(mockDb);
         addRelationship = new AddRelationship(mockDb);
+        computeBaconNumber = new ComputeBaconNumber(mockDb);
+        computeBaconPath = new ComputeBaconPath(mockDb);
         mockExchange = mock(HttpExchange.class);
+    }
+
+    /**
+     * Rigorous Test :-)
+     */
+    public void testApp() {
+        assertTrue(true);
     }
 
     public void testAddActorPass() throws IOException, JSONException {
@@ -277,6 +288,203 @@ public class AppTest extends TestCase {
 
         // Call the handle method
         addRelationship.handle(mockExchange);
+
+        // Verify the response status is 404
+        verify(mockExchange).sendResponseHeaders(eq(404), anyLong());
+    }
+
+    public void testComputeBaconNumberPass() throws IOException, JSONException {
+        // Mock the HTTP exchange
+        when(mockExchange.getRequestMethod()).thenReturn("GET");
+        JSONObject requestBody = new JSONObject();
+        requestBody.put("actorId", "12345");
+        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
+        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+
+        // Mock the database session for actor existence
+        Result mockActorResult = mock(Result.class);
+        when(mockActorResult.hasNext()).thenReturn(true);
+        when(mockSession.run(eq("MATCH (a:Actor) WHERE a.actorId = $actorId RETURN a"), anyMap())).thenReturn(mockActorResult);
+
+        // Mock the database session for finding the Bacon number
+        Result mockBaconResult = mock(Result.class);
+        Record mockRecord = mock(Record.class);
+        Value mockValue = new IntegerValue(2);
+        when(mockRecord.get("baconNumber")).thenReturn(mockValue);
+        when(mockBaconResult.hasNext()).thenReturn(true);
+        when(mockBaconResult.next()).thenReturn(mockRecord);
+        when(mockSession.run(anyString(), anyMap())).thenReturn(mockBaconResult);
+
+        // Mock the response stream
+        OutputStream mockOutputStream = mock(OutputStream.class);
+        when(mockExchange.getResponseBody()).thenReturn(mockOutputStream);
+
+        // Call the handle method
+        computeBaconNumber.handle(mockExchange);
+
+        // Verify the response status is 200
+        verify(mockExchange).sendResponseHeaders(eq(200), anyLong());
+        verify(mockOutputStream).write(any(byte[].class));
+        verify(mockOutputStream).close();
+    }
+
+    public void testComputeBaconNumberFail() throws IOException, JSONException {
+        // Mock the HTTP exchange
+        when(mockExchange.getRequestMethod()).thenReturn("GET");
+        JSONObject requestBody = new JSONObject();
+        requestBody.put("actorId", "12345");
+        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
+        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+
+        // Mock the database session for actor existence
+        Result mockActorResult = mock(Result.class);
+        when(mockActorResult.hasNext()).thenReturn(true);
+        when(mockSession.run(eq("MATCH (a:Actor) WHERE a.actorId = $actorId RETURN a"), anyMap())).thenReturn(mockActorResult);
+
+        // Mock the database session for finding the Bacon number
+        Result mockBaconResult = mock(Result.class);
+        Record mockRecord = mock(Record.class);
+        Value mockValue = new IntegerValue(-1);
+        when(mockRecord.get("baconNumber")).thenReturn(mockValue);
+        when(mockBaconResult.hasNext()).thenReturn(true);
+        when(mockBaconResult.next()).thenReturn(mockRecord);
+        when(mockSession.run(anyString(), anyMap())).thenReturn(mockBaconResult);
+
+        // Call the handle method
+        computeBaconNumber.handle(mockExchange);
+
+        // Verify the response status is 404
+        verify(mockExchange).sendResponseHeaders(eq(404), anyLong());
+    }
+
+    public void testComputeBaconNumberInvalidMethod() throws IOException, JSONException {
+        // Mock the HTTP exchange
+        when(mockExchange.getRequestMethod()).thenReturn("POST");
+
+        // Call the handle method
+        computeBaconNumber.handle(mockExchange);
+
+        // Verify the response status is 400
+        verify(mockExchange).sendResponseHeaders(eq(400), anyLong());
+    }
+
+    public void testComputeBaconNumberNoActorId() throws IOException, JSONException {
+        // Mock the HTTP exchange
+        when(mockExchange.getRequestMethod()).thenReturn("GET");
+        JSONObject requestBody = new JSONObject();
+        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
+        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+
+        // Call the handle method
+        computeBaconNumber.handle(mockExchange);
+
+        // Verify the response status is 400
+        verify(mockExchange).sendResponseHeaders(eq(400), anyLong());
+    }
+
+    public void testComputeBaconPathPass() throws IOException, JSONException {
+        // Mock the HTTP exchange
+        when(mockExchange.getRequestMethod()).thenReturn("GET");
+        JSONObject requestBody = new JSONObject();
+        requestBody.put("actorId", "12345");
+        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
+        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+
+        // Mock the database session for actor existence
+        Result mockActorResult = mock(Result.class);
+        when(mockActorResult.hasNext()).thenReturn(true);
+        when(mockSession.run(eq("MATCH (a:Actor) WHERE a.actorId = $actorId RETURN a"), anyMap())).thenReturn(mockActorResult);
+
+        // Mock the database session for retrieving the Bacon path
+        Result mockPathResult = mock(Result.class);
+        Record mockRecord = mock(Record.class);
+        when(mockRecord.get("pathExists")).thenReturn(BooleanValue.TRUE);
+        when(mockRecord.get("baconPath")).thenReturn(new ListValue(new StringValue("nm0000102"), new StringValue("12345")));
+        when(mockPathResult.hasNext()).thenReturn(true);
+        when(mockPathResult.next()).thenReturn(mockRecord);
+        when(mockSession.run(anyString(), anyMap())).thenReturn(mockPathResult);
+
+        // Mock the response stream
+        OutputStream mockOutputStream = mock(OutputStream.class);
+        when(mockExchange.getResponseBody()).thenReturn(mockOutputStream);
+
+        // Call the handle method
+        computeBaconPath.handle(mockExchange);
+
+        // Verify the response status is 200
+        verify(mockExchange).sendResponseHeaders(eq(200), anyLong());
+        verify(mockOutputStream).write(any(byte[].class));
+        verify(mockOutputStream).close();
+    }
+
+    public void testComputeBaconPathFail() throws IOException, JSONException {
+        // Mock the HTTP exchange
+        when(mockExchange.getRequestMethod()).thenReturn("GET");
+        JSONObject requestBody = new JSONObject();
+        requestBody.put("actorId", "12345");
+        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
+        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+
+        // Mock the database session for actor existence
+        Result mockActorResult = mock(Result.class);
+        when(mockActorResult.hasNext()).thenReturn(true);
+        when(mockSession.run(eq("MATCH (a:Actor) WHERE a.actorId = $actorId RETURN a"), anyMap())).thenReturn(mockActorResult);
+
+        // Mock the database session for retrieving the Bacon path
+        Result mockPathResult = mock(Result.class);
+        Record mockRecord = mock(Record.class);
+        when(mockRecord.get("pathExists")).thenReturn(BooleanValue.FALSE);
+        when(mockPathResult.hasNext()).thenReturn(true);
+        when(mockPathResult.next()).thenReturn(mockRecord);
+        when(mockSession.run(anyString(), anyMap())).thenReturn(mockPathResult);
+
+        // Call the handle method
+        computeBaconPath.handle(mockExchange);
+
+        // Verify the response status is 404
+        verify(mockExchange).sendResponseHeaders(eq(404), anyLong());
+    }
+
+    public void testComputeBaconPathInvalidMethod() throws IOException, JSONException {
+        // Mock the HTTP exchange
+        when(mockExchange.getRequestMethod()).thenReturn("POST");
+
+        // Call the handle method
+        computeBaconPath.handle(mockExchange);
+
+        // Verify the response status is 400
+        verify(mockExchange).sendResponseHeaders(eq(400), anyLong());
+    }
+
+    public void testComputeBaconPathNoActorId() throws IOException, JSONException {
+        // Mock the HTTP exchange
+        when(mockExchange.getRequestMethod()).thenReturn("GET");
+        JSONObject requestBody = new JSONObject();
+        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
+        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+
+        // Call the handle method
+        computeBaconPath.handle(mockExchange);
+
+        // Verify the response status is 400
+        verify(mockExchange).sendResponseHeaders(eq(400), anyLong());
+    }
+
+    public void testComputeBaconPathActorNotFound() throws IOException, JSONException {
+        // Mock the HTTP exchange
+        when(mockExchange.getRequestMethod()).thenReturn("GET");
+        JSONObject requestBody = new JSONObject();
+        requestBody.put("actorId", "12345");
+        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
+        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+
+        // Mock the database session for actor existence
+        Result mockActorResult = mock(Result.class);
+        when(mockActorResult.hasNext()).thenReturn(false);
+        when(mockSession.run(eq("MATCH (a:Actor) WHERE a.actorId = $actorId RETURN a"), anyMap())).thenReturn(mockActorResult);
+
+        // Call the handle method
+        computeBaconPath.handle(mockExchange);
 
         // Verify the response status is 404
         verify(mockExchange).sendResponseHeaders(eq(404), anyLong());
