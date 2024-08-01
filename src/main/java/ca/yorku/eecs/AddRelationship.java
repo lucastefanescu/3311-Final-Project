@@ -77,22 +77,24 @@ public class AddRelationship implements HttpHandler {
             return 500;
         }
     }
-    public boolean relationshipExists(String actorId, String movieId){
+    public boolean relationshipExists(String actorId, String movieId) {
         String query = "MATCH (a:Actor {actorId: $actorId})-[r:ACTED_IN]-(m:Movie {movieId: $movieId}) RETURN r";
-
         Map<String, Object> map = new HashMap<>();
         map.put("movieId", movieId);
         map.put("actorId", actorId);
 
-        try(Session session = driver.session()){
+        try (Session session = driver.session()) {
             Result result = session.run(query, map);
-            if(result.hasNext()){
-                return true;
-            }else{
-                return false;
+            if (result == null) {
+                System.out.println("Result is null");
             }
+            return result.hasNext();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
     }
+
     private boolean actorExists(String actorId) {
         String query = "MATCH (a:Actor) WHERE a.actorId = $actorId RETURN a";
         Map<String, Object> map = Collections.singletonMap("actorId", actorId);
