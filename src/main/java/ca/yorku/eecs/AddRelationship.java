@@ -85,9 +85,6 @@ public class AddRelationship implements HttpHandler {
 
         try (Session session = driver.session()) {
             Result result = session.run(query, map);
-            if (result == null) {
-                System.out.println("Result is null");
-            }
             return result.hasNext();
         } catch (Exception e) {
             e.printStackTrace();
