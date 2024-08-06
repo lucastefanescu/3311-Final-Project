@@ -52,7 +52,8 @@ public class AddMovieWithDetails implements HttpHandler {
                 exchange.sendResponseHeaders(400, -1);
             }else{
                 name = httpReqDeserialized.getString("name");
-                movieId = httpReqDeserialized.getString("movieId");             	
+                movieId = httpReqDeserialized.getString("movieId"); 
+                genre = httpReqDeserialized.getString("genre");
                 if (!httpReqDeserialized.has("rating")) {
                 	rating = "0";
                 }

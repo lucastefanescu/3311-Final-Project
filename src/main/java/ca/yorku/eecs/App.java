@@ -26,6 +26,7 @@ public class App
         server.createContext("/api/v1/listMovies", new ListMovies(db));
         server.createContext("/api/v1/isNominated", new IsNominated(db));
 
+
         server.start();
         System.out.printf("Server started on port %d...\n", PORT);
     }

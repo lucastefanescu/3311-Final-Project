@@ -68,8 +68,7 @@ public class GetHighestRating implements HttpHandler {
     }
     public String retrieveHighestRatedMovie(String actorId){
         String query = "MATCH (a:Actor {actorId: $actorId})-[:ACTED_IN]->(m:Movie) " +
-                "RETURN a.actorId AS actorId, m.title AS name, m.rating AS rating " +
-                "ORDER BY m.rating DESC LIMIT 1";
+                "RETURN a.actorId AS actorId, m.name AS name, MAX(m.rating) AS rating "; 
 
         Map map = Collections.singletonMap("actorId", actorId);
 
@@ -81,7 +80,7 @@ public class GetHighestRating implements HttpHandler {
                 JSONObject jsonResult = new JSONObject();
                 jsonResult.put("actorId", record.get("actorId").asString());
                 jsonResult.put("name", record.get("name").asString());
-                jsonResult.put("rating", record.get("rating").asDouble());
+                jsonResult.put("rating", record.get("rating").isNull() ? 0 : record.get("rating").asString());
                 return jsonResult.toString();
             }
         } catch (Exception e) {
