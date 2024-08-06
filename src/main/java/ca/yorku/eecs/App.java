@@ -15,12 +15,16 @@ public class App
 
         server.createContext("/api/v1/addActor", new AddActor(db));
         server.createContext("/api/v1/addMovie", new AddMovie(db));
+        server.createContext("/api/v1/addMovieWithDetails", new AddMovieWithDetails(db));
         server.createContext("/api/v1/addRelationship", new AddRelationship(db));
         server.createContext("/api/v1/getActor", new GetActor(db));
         server.createContext("/api/v1/getMovie", new GetMovie(db));
         server.createContext("/api/v1/hasRelationship", new HasRelationship(db));
         server.createContext("/api/v1/computeBaconNumber", new ComputeBaconNumber(db));
         server.createContext("/api/v1/computeBaconPath", new ComputeBaconPath(db));
+        server.createContext("/api/v1/getHighestRating", new GetHighestRating(db));
+        server.createContext("/api/v1/listMovies", new ListMovies(db));
+        server.createContext("/api/v1/isNominated", new IsNominated(db));
 
         server.start();
         System.out.printf("Server started on port %d...\n", PORT);

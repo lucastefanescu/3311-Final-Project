@@ -2,6 +2,8 @@ package ca.yorku.eecs;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.neo4j.driver.Driver;
@@ -55,29 +57,25 @@ public class ListMovies implements HttpHandler {
             e.printStackTrace();
         }
     }
-//    private boolean actorExists(String genre) {
-//        String query = "MATCH (a:Actor) WHERE a.actorId = $actorId RETURN a";
-//        Map<String, Object> map = Collections.singletonMap("actorId", actorId);
-//
-//        try(Session session = driver.session()){
-//            Result result = session.run(query, map);
-//            return result.hasNext();
-//        }
-//    }
     public String retrieveMoviesByGenre(String genre){
-        String query = "MATCH (m:Movie {genre: $genre}) RETURN m.title AS title";
-
-        Map map = Collections.singletonMap("genre", genre);
+    	String query = "MATCH (m:Movie {genre: $genre}) " +
+                "RETURN {movieId: m.movieId, name: m.name} AS result";
+        Map<String, Object> map = Collections.singletonMap("genre", genre);
 
         try (Session session = driver.session()) {
             Result result = session.run(query, map);
+            JSONArray moviesArray = new JSONArray();
 
-            if (result.hasNext()) {
+            while (result.hasNext()) {
                 Record record = result.next();
-                JSONObject jsonResult = new JSONObject();
-                jsonResult.put("title", record.get("title").asString());
-                return jsonResult.toString();
+                JSONObject movie = new JSONObject(record.get("result").asMap());
+                moviesArray.put(movie); // put all movie objects into array
             }
+            JSONObject jsonResult = new JSONObject();
+            jsonResult.put("genre", genre);
+            jsonResult.put("movies", moviesArray);
+            
+            return jsonResult.toString();          
         } catch (Exception e) {
             e.printStackTrace();
         }
