@@ -1,41 +1,21 @@
 package ca.yorku.eecs;
 
+import com.sun.net.httpserver.*;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import com.sun.net.httpserver.HttpExchange;
-import org.json.JSONException;
 import org.json.JSONObject;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.value.BooleanValue;
-import org.neo4j.driver.internal.value.IntegerValue;
-import org.neo4j.driver.internal.value.ListValue;
-import org.neo4j.driver.internal.value.StringValue;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import java.net.InetSocketAddress;
+import java.net.URI;
 
 public class AppTest extends TestCase {
-    private AddActor addActor;
-    private AddMovie addMovie;
-    private AddRelationship addRelationship;
-    private ComputeBaconNumber computeBaconNumber;
-    private ComputeBaconPath computeBaconPath;
-    private Driver mockDriver;
-    private HttpExchange mockExchange;
-    private Session mockSession;
-    private neo4jDB mockDb;
+    private static neo4jDB db;
 
     /**
      * Create the test case
@@ -53,24 +33,6 @@ public class AppTest extends TestCase {
         return new TestSuite(AppTest.class);
     }
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        mockDriver = mock(Driver.class);
-        mockSession = mock(Session.class);
-        when(mockDriver.session()).thenReturn(mockSession);
-
-        mockDb = mock(neo4jDB.class);
-        when(mockDb.getDriver()).thenReturn(mockDriver);
-
-        addActor = new AddActor(mockDb);
-        addMovie = new AddMovie(mockDb);
-        addRelationship = new AddRelationship(mockDb);
-        computeBaconNumber = new ComputeBaconNumber(mockDb);
-        computeBaconPath = new ComputeBaconPath(mockDb);
-        mockExchange = mock(HttpExchange.class);
-    }
-
     /**
      * Rigorous Test :-)
      */
@@ -78,415 +40,404 @@ public class AppTest extends TestCase {
         assertTrue(true);
     }
 
-    public void testAddActorPass() throws IOException, JSONException {
-        // Mock the HTTP exchange
-        when(mockExchange.getRequestMethod()).thenReturn("PUT");
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        db = new neo4jDB("bolt://localhost:7687", "neo4j", "123456");
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        db.closeDB();
+        super.tearDown();
+    }
+
+    public void testAddActorPass() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/addActor", new AddActor(db));
+        server.setExecutor(null); // creates a default executor
+        server.start();
+
+        // Create a JSON request body
         JSONObject requestBody = new JSONObject();
-        requestBody.put("name", "John Doe");
-        requestBody.put("actorId", "12345");
-        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
-        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+        requestBody.put("name", "Keanu Reeves");
+        requestBody.put("actorId", "1234");
 
-        // Mock the database session
-        when(mockSession.run(anyString(), anyMap())).thenReturn(mock(Result.class));
+        HttpExchangeMock exchange = new HttpExchangeMock("PUT", "/addActor", requestBody.toString());
+        new AddActor(db).handle(exchange);
 
-        // Mock the response headers
-        doNothing().when(mockExchange).sendResponseHeaders(eq(200), anyLong());
+        assertEquals(200, exchange.getResponseCode());
 
-        // Call the handle method
-        addActor.handle(mockExchange);
-
-        // Verify the response status is 200
-        verify(mockExchange).sendResponseHeaders(eq(200), anyLong());
+        server.stop(0);
     }
 
-    public void testAddActorFail() throws IOException, JSONException {
-        // Mock the HTTP exchange
-        when(mockExchange.getRequestMethod()).thenReturn("PUT");
+    public void testAddActorFail() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/addActor", new AddActor(db));
+        server.setExecutor(null); // creates a default executor
+        server.start();
+
+        // Create a JSON request body with missing actorId
         JSONObject requestBody = new JSONObject();
-        requestBody.put("name", "John Doe");
-        requestBody.put("actorId", "12345");
-        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
-        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+        requestBody.put("name", "Keanu Reeves");
 
-        // Mock the database session
-        Result mockResult = mock(Result.class);
-        when(mockResult.hasNext()).thenReturn(true);  // Simulate actor already exists
-        when(mockSession.run(anyString(), anyMap())).thenReturn(mockResult);
+        HttpExchangeMock exchange = new HttpExchangeMock("PUT", "/addActor", requestBody.toString());
+        new AddActor(db).handle(exchange);
 
-        // Mock the response headers
-        doNothing().when(mockExchange).sendResponseHeaders(eq(400), anyLong());
+        assertEquals(400, exchange.getResponseCode());
 
-        // Call the handle method
-        addActor.handle(mockExchange);
-
-        // Verify the response status is 400
-        verify(mockExchange).sendResponseHeaders(eq(400), anyLong());
+        server.stop(0);
     }
 
-    public void testAddMoviePass() throws IOException, JSONException {
-        // Mock the HTTP exchange
-        when(mockExchange.getRequestMethod()).thenReturn("PUT");
+    public void testAddMoviePass() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/addMovie", new AddMovie(db));
+        server.setExecutor(null); // creates a default executor
+        server.start();
+
+        // Create a JSON request body
         JSONObject requestBody = new JSONObject();
-        requestBody.put("name", "Some Movie");
-        requestBody.put("movieId", "67890");
-        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
-        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+        requestBody.put("name", "The Matrix");
+        requestBody.put("movieId", "5678");
 
-        // Mock the database session
-        when(mockSession.run(anyString(), anyMap())).thenReturn(mock(Result.class));
+        HttpExchangeMock exchange = new HttpExchangeMock("PUT", "/addMovie", requestBody.toString());
+        new AddMovie(db).handle(exchange);
 
-        // Mock the response headers
-        doNothing().when(mockExchange).sendResponseHeaders(eq(200), anyLong());
+        assertEquals(200, exchange.getResponseCode());
 
-        // Call the handle method
-        addMovie.handle(mockExchange);
-
-        // Verify the response status is 200
-        verify(mockExchange).sendResponseHeaders(eq(200), anyLong());
+        server.stop(0);
     }
 
-    public void testAddMovieFail() throws IOException, JSONException {
-        // Mock the HTTP exchange
-        when(mockExchange.getRequestMethod()).thenReturn("PUT");
+    public void testAddMovieFail() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/addMovie", new AddMovie(db));
+        server.setExecutor(null); // creates a default executor
+        server.start();
+
+        // Create a JSON request body with missing movieId
         JSONObject requestBody = new JSONObject();
-        requestBody.put("name", "Some Movie");
-        requestBody.put("movieId", "67890");
-        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
-        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+        requestBody.put("name", "The Matrix");
 
-        // Mock the database session
-        Result mockResult = mock(Result.class);
-        when(mockResult.hasNext()).thenReturn(true);  // Simulate movie already exists
-        when(mockSession.run(anyString(), anyMap())).thenReturn(mockResult);
+        HttpExchangeMock exchange = new HttpExchangeMock("PUT", "/addMovie", requestBody.toString());
+        new AddMovie(db).handle(exchange);
 
-        // Mock the response headers
-        doNothing().when(mockExchange).sendResponseHeaders(eq(400), anyLong());
+        assertEquals(400, exchange.getResponseCode());
 
-        // Call the handle method
-        addMovie.handle(mockExchange);
-
-        // Verify the response status is 400
-        verify(mockExchange).sendResponseHeaders(eq(400), anyLong());
+        server.stop(0);
     }
 
-    public void testAddRelationshipPass() throws IOException, JSONException {
-        // Mock the HTTP exchange
-        when(mockExchange.getRequestMethod()).thenReturn("PUT");
+    public void testAddRelationshipPass() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/addRelationship", new AddRelationship(db));
+        server.setExecutor(null); // creates a default executor
+        server.start();
+
+        // Create a JSON request body
         JSONObject requestBody = new JSONObject();
-        requestBody.put("actorId", "12345");
-        requestBody.put("movieId", "67890");
-        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
-        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+        requestBody.put("actorId", "1234");
+        requestBody.put("movieId", "5678");
 
-        // Mock the database session
-        Result mockEmptyResult = mock(Result.class);
-        when(mockEmptyResult.hasNext()).thenReturn(false);  // Simulate no existing relationship
+        HttpExchangeMock exchange = new HttpExchangeMock("PUT", "/addRelationship", requestBody.toString());
+        new AddRelationship(db).handle(exchange);
 
-        // Ensure actor and movie exist
-        Result mockActorResult = mock(Result.class);
-        when(mockActorResult.hasNext()).thenReturn(true);
-        Result mockMovieResult = mock(Result.class);
-        when(mockMovieResult.hasNext()).thenReturn(true);
+        assertEquals(200, exchange.getResponseCode());
 
-        // Mock specific queries to ensure actor and movie exist and no existing relationship
-        when(mockSession.run(eq("MATCH (a:Actor {actorId: $actorId})-[r:ACTED_IN]->(m:Movie {movieId: $movieId}) RETURN r"), anyMap())).thenReturn(mockEmptyResult);
-        when(mockSession.run(eq("MATCH (a:Actor) WHERE a.actorId = $actorId RETURN a"), anyMap())).thenReturn(mockActorResult);
-        when(mockSession.run(eq("MATCH (m:Movie) WHERE m.movieId = $movieId RETURN m"), anyMap())).thenReturn(mockMovieResult);
-
-        // Mock the response headers
-        doNothing().when(mockExchange).sendResponseHeaders(eq(200), anyLong());
-
-        // Call the handle method
-        addRelationship.handle(mockExchange);
-
-        // Verify the response status is 200
-        verify(mockExchange).sendResponseHeaders(eq(200), anyLong());
-
-        // Verify the relationshipExists method was called
-        verify(mockSession).run(eq("MATCH (a:Actor {actorId: $actorId})-[r:ACTED_IN]-(m:Movie {movieId: $movieId}) RETURN r"), anyMap());
-        // Verify the actorExists method was called
-        verify(mockSession).run(eq("MATCH (a:Actor) WHERE a.actorId = $actorId RETURN a"), anyMap());
-        // Verify the movieExists method was called
-        verify(mockSession).run(eq("MATCH (m:Movie) WHERE m.movieId = $movieId RETURN m"), anyMap());
+        server.stop(0);
     }
 
-    public void testAddRelationshipFail() throws IOException, JSONException {
-        // Mock the HTTP exchange
-        when(mockExchange.getRequestMethod()).thenReturn("PUT");
+    public void testAddRelationshipFail() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/addRelationship", new AddRelationship(db));
+        server.setExecutor(null); // creates a default executor
+        server.start();
+
+        // Create a JSON request body with missing movieId
         JSONObject requestBody = new JSONObject();
-        requestBody.put("actorId", "12345");
-        requestBody.put("movieId", "67890");
-        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
-        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+        requestBody.put("actorId", "1234");
 
-        // Mock the database session
-        Result mockResult = mock(Result.class);
-        when(mockResult.hasNext()).thenReturn(true);  // Simulate relationship already exists
-        when(mockSession.run(anyString(), anyMap())).thenReturn(mockResult);
+        HttpExchangeMock exchange = new HttpExchangeMock("PUT", "/addRelationship", requestBody.toString());
+        new AddRelationship(db).handle(exchange);
 
-        // Mock the response headers
-        doNothing().when(mockExchange).sendResponseHeaders(eq(400), anyLong());
+        assertEquals(400, exchange.getResponseCode());
 
-        // Call the handle method
-        addRelationship.handle(mockExchange);
-
-        // Verify the response status is 400
-        verify(mockExchange).sendResponseHeaders(eq(400), anyLong());
+        server.stop(0);
     }
 
-    public void testAddRelationshipActorNotFound() throws IOException, JSONException {
-        // Mock the HTTP exchange
-        when(mockExchange.getRequestMethod()).thenReturn("PUT");
+    public void testComputeBaconNumberPass() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/computeBaconNumber", new ComputeBaconNumber(db));
+        server.setExecutor(null); // creates a default executor
+        server.start();
+
+        // Create a JSON request body
         JSONObject requestBody = new JSONObject();
-        requestBody.put("actorId", "12345");
-        requestBody.put("movieId", "67890");
-        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
-        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+        requestBody.put("actorId", "1234");
 
-        // Mock the database session
-        Result mockEmptyResult = mock(Result.class);
-        when(mockEmptyResult.hasNext()).thenReturn(false);  // Simulate actor does not exist
-        Result mockMovieResult = mock(Result.class);
-        when(mockMovieResult.hasNext()).thenReturn(true);  // Simulate movie exists
+        HttpExchangeMock exchange = new HttpExchangeMock("GET", "/computeBaconNumber", requestBody.toString());
+        new ComputeBaconNumber(db).handle(exchange);
 
-        when(mockSession.run(eq("MATCH (a:Actor) WHERE a.actorId = $actorId RETURN a"), anyMap())).thenReturn(mockEmptyResult);
-        when(mockSession.run(eq("MATCH (m:Movie) WHERE m.movieId = $movieId RETURN m"), anyMap())).thenReturn(mockMovieResult);
-        when(mockSession.run(anyString(), anyMap())).thenReturn(mockEmptyResult); // For other queries
+        assertEquals(200, exchange.getResponseCode());
 
-        // Mock the response headers
-        doNothing().when(mockExchange).sendResponseHeaders(eq(404), anyLong());
-
-        // Call the handle method
-        addRelationship.handle(mockExchange);
-
-        // Verify the response status is 404
-        verify(mockExchange).sendResponseHeaders(eq(404), anyLong());
+        server.stop(0);
     }
 
-    public void testAddRelationshipMovieNotFound() throws IOException, JSONException {
-        // Mock the HTTP exchange
-        when(mockExchange.getRequestMethod()).thenReturn("PUT");
+    public void testComputeBaconNumberFail() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/computeBaconNumber", new ComputeBaconNumber(db));
+        server.setExecutor(null); // creates a default executor
+        server.start();
+
+        // Create a JSON request body with missing actorId
         JSONObject requestBody = new JSONObject();
-        requestBody.put("actorId", "12345");
-        requestBody.put("movieId", "67890");
-        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
-        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
 
-        // Mock the database session
-        Result mockEmptyResult = mock(Result.class);
-        when(mockEmptyResult.hasNext()).thenReturn(false);  // Simulate movie does not exist
-        Result mockActorResult = mock(Result.class);
-        when(mockActorResult.hasNext()).thenReturn(true);  // Simulate actor exists
+        HttpExchangeMock exchange = new HttpExchangeMock("GET", "/computeBaconNumber", requestBody.toString());
+        new ComputeBaconNumber(db).handle(exchange);
 
-        when(mockSession.run(eq("MATCH (a:Actor) WHERE a.actorId = $actorId RETURN a"), anyMap())).thenReturn(mockActorResult);
-        when(mockSession.run(eq("MATCH (m:Movie) WHERE m.movieId = $movieId RETURN m"), anyMap())).thenReturn(mockEmptyResult);
-        when(mockSession.run(anyString(), anyMap())).thenReturn(mockEmptyResult); // For other queries
+        assertEquals(400, exchange.getResponseCode());
 
-        // Mock the response headers
-        doNothing().when(mockExchange).sendResponseHeaders(eq(404), anyLong());
-
-        // Call the handle method
-        addRelationship.handle(mockExchange);
-
-        // Verify the response status is 404
-        verify(mockExchange).sendResponseHeaders(eq(404), anyLong());
+        server.stop(0);
     }
 
-    public void testComputeBaconNumberPass() throws IOException, JSONException {
-        // Mock the HTTP exchange
-        when(mockExchange.getRequestMethod()).thenReturn("GET");
+    public void testComputeBaconPathPass() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/computeBaconPath", new ComputeBaconPath(db));
+        server.setExecutor(null); // creates a default executor
+        server.start();
+
+        // Create a JSON request body
         JSONObject requestBody = new JSONObject();
-        requestBody.put("actorId", "12345");
-        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
-        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+        requestBody.put("actorId", "1234");
 
-        // Mock the database session for actor existence
-        Result mockActorResult = mock(Result.class);
-        when(mockActorResult.hasNext()).thenReturn(true);
-        when(mockSession.run(eq("MATCH (a:Actor) WHERE a.actorId = $actorId RETURN a"), anyMap())).thenReturn(mockActorResult);
+        HttpExchangeMock exchange = new HttpExchangeMock("GET", "/computeBaconPath", requestBody.toString());
+        new ComputeBaconPath(db).handle(exchange);
 
-        // Mock the database session for finding the Bacon number
-        Result mockBaconResult = mock(Result.class);
-        Record mockRecord = mock(Record.class);
-        Value mockValue = new IntegerValue(2);
-        when(mockRecord.get("baconNumber")).thenReturn(mockValue);
-        when(mockBaconResult.hasNext()).thenReturn(true);
-        when(mockBaconResult.next()).thenReturn(mockRecord);
-        when(mockSession.run(anyString(), anyMap())).thenReturn(mockBaconResult);
+        assertEquals(200, exchange.getResponseCode());
 
-        // Mock the response stream
-        OutputStream mockOutputStream = mock(OutputStream.class);
-        when(mockExchange.getResponseBody()).thenReturn(mockOutputStream);
-
-        // Call the handle method
-        computeBaconNumber.handle(mockExchange);
-
-        // Verify the response status is 200
-        verify(mockExchange).sendResponseHeaders(eq(200), anyLong());
-        verify(mockOutputStream).write(any(byte[].class));
-        verify(mockOutputStream).close();
+        server.stop(0);
     }
 
-    public void testComputeBaconNumberFail() throws IOException, JSONException {
-        // Mock the HTTP exchange
-        when(mockExchange.getRequestMethod()).thenReturn("GET");
+    public void testComputeBaconPathFail() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/computeBaconPath", new ComputeBaconPath(db));
+        server.setExecutor(null); // creates a default executor
+        server.start();
+
+        // Create a JSON request body with missing actorId
         JSONObject requestBody = new JSONObject();
-        requestBody.put("actorId", "12345");
-        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
-        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
 
-        // Mock the database session for actor existence
-        Result mockActorResult = mock(Result.class);
-        when(mockActorResult.hasNext()).thenReturn(true);
-        when(mockSession.run(eq("MATCH (a:Actor) WHERE a.actorId = $actorId RETURN a"), anyMap())).thenReturn(mockActorResult);
+        HttpExchangeMock exchange = new HttpExchangeMock("GET", "/computeBaconPath", requestBody.toString());
+        new ComputeBaconPath(db).handle(exchange);
 
-        // Mock the database session for finding the Bacon number
-        Result mockBaconResult = mock(Result.class);
-        Record mockRecord = mock(Record.class);
-        Value mockValue = new IntegerValue(-1);
-        when(mockRecord.get("baconNumber")).thenReturn(mockValue);
-        when(mockBaconResult.hasNext()).thenReturn(true);
-        when(mockBaconResult.next()).thenReturn(mockRecord);
-        when(mockSession.run(anyString(), anyMap())).thenReturn(mockBaconResult);
+        assertEquals(400, exchange.getResponseCode());
 
-        // Call the handle method
-        computeBaconNumber.handle(mockExchange);
-
-        // Verify the response status is 404
-        verify(mockExchange).sendResponseHeaders(eq(404), anyLong());
+        server.stop(0);
     }
 
-    public void testComputeBaconNumberInvalidMethod() throws IOException, JSONException {
-        // Mock the HTTP exchange
-        when(mockExchange.getRequestMethod()).thenReturn("POST");
+    public void testGetActorPass() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/getActor", new GetActor(db));
+        server.setExecutor(null); // creates a default executor
+        server.start();
 
-        // Call the handle method
-        computeBaconNumber.handle(mockExchange);
-
-        // Verify the response status is 400
-        verify(mockExchange).sendResponseHeaders(eq(400), anyLong());
-    }
-
-    public void testComputeBaconNumberNoActorId() throws IOException, JSONException {
-        // Mock the HTTP exchange
-        when(mockExchange.getRequestMethod()).thenReturn("GET");
+        // Create a JSON request body
         JSONObject requestBody = new JSONObject();
-        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
-        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+        requestBody.put("actorId", "1234");
 
-        // Call the handle method
-        computeBaconNumber.handle(mockExchange);
+        HttpExchangeMock exchange = new HttpExchangeMock("GET", "/getActor", requestBody.toString());
+        new GetActor(db).handle(exchange);
 
-        // Verify the response status is 400
-        verify(mockExchange).sendResponseHeaders(eq(400), anyLong());
+        assertEquals(200, exchange.getResponseCode());
+
+        server.stop(0);
     }
 
-    public void testComputeBaconPathPass() throws IOException, JSONException {
-        // Mock the HTTP exchange
-        when(mockExchange.getRequestMethod()).thenReturn("GET");
+    public void testGetActorFail() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/getActor", new GetActor(db));
+        server.setExecutor(null); // creates a default executor
+        server.start();
+
+        // Create a JSON request body with missing actorId
         JSONObject requestBody = new JSONObject();
-        requestBody.put("actorId", "12345");
-        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
-        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
 
-        // Mock the database session for actor existence
-        Result mockActorResult = mock(Result.class);
-        when(mockActorResult.hasNext()).thenReturn(true);
-        when(mockSession.run(eq("MATCH (a:Actor) WHERE a.actorId = $actorId RETURN a"), anyMap())).thenReturn(mockActorResult);
+        HttpExchangeMock exchange = new HttpExchangeMock("GET", "/getActor", requestBody.toString());
+        new GetActor(db).handle(exchange);
 
-        // Mock the database session for retrieving the Bacon path
-        Result mockPathResult = mock(Result.class);
-        Record mockRecord = mock(Record.class);
-        when(mockRecord.get("pathExists")).thenReturn(BooleanValue.TRUE);
-        when(mockRecord.get("baconPath")).thenReturn(new ListValue(new StringValue("nm0000102"), new StringValue("12345")));
-        when(mockPathResult.hasNext()).thenReturn(true);
-        when(mockPathResult.next()).thenReturn(mockRecord);
-        when(mockSession.run(anyString(), anyMap())).thenReturn(mockPathResult);
+        assertEquals(400, exchange.getResponseCode());
 
-        // Mock the response stream
-        OutputStream mockOutputStream = mock(OutputStream.class);
-        when(mockExchange.getResponseBody()).thenReturn(mockOutputStream);
-
-        // Call the handle method
-        computeBaconPath.handle(mockExchange);
-
-        // Verify the response status is 200
-        verify(mockExchange).sendResponseHeaders(eq(200), anyLong());
-        verify(mockOutputStream).write(any(byte[].class));
-        verify(mockOutputStream).close();
+        server.stop(0);
     }
 
-    public void testComputeBaconPathFail() throws IOException, JSONException {
-        // Mock the HTTP exchange
-        when(mockExchange.getRequestMethod()).thenReturn("GET");
+    public void testGetMoviePass() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/getMovie", new GetMovie(db));
+        server.setExecutor(null); // creates a default executor
+        server.start();
+
+        // Create a JSON request body
         JSONObject requestBody = new JSONObject();
-        requestBody.put("actorId", "12345");
-        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
-        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+        requestBody.put("movieId", "5678");
 
-        // Mock the database session for actor existence
-        Result mockActorResult = mock(Result.class);
-        when(mockActorResult.hasNext()).thenReturn(true);
-        when(mockSession.run(eq("MATCH (a:Actor) WHERE a.actorId = $actorId RETURN a"), anyMap())).thenReturn(mockActorResult);
+        HttpExchangeMock exchange = new HttpExchangeMock("GET", "/getMovie", requestBody.toString());
+        new GetMovie(db).handle(exchange);
 
-        // Mock the database session for retrieving the Bacon path
-        Result mockPathResult = mock(Result.class);
-        Record mockRecord = mock(Record.class);
-        when(mockRecord.get("pathExists")).thenReturn(BooleanValue.FALSE);
-        when(mockPathResult.hasNext()).thenReturn(true);
-        when(mockPathResult.next()).thenReturn(mockRecord);
-        when(mockSession.run(anyString(), anyMap())).thenReturn(mockPathResult);
+        assertEquals(200, exchange.getResponseCode());
 
-        // Call the handle method
-        computeBaconPath.handle(mockExchange);
-
-        // Verify the response status is 404
-        verify(mockExchange).sendResponseHeaders(eq(404), anyLong());
+        server.stop(0);
     }
 
-    public void testComputeBaconPathInvalidMethod() throws IOException, JSONException {
-        // Mock the HTTP exchange
-        when(mockExchange.getRequestMethod()).thenReturn("POST");
+    public void testGetMovieFail() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/getMovie", new GetMovie(db));
+        server.setExecutor(null); // creates a default executor
+        server.start();
 
-        // Call the handle method
-        computeBaconPath.handle(mockExchange);
-
-        // Verify the response status is 400
-        verify(mockExchange).sendResponseHeaders(eq(400), anyLong());
-    }
-
-    public void testComputeBaconPathNoActorId() throws IOException, JSONException {
-        // Mock the HTTP exchange
-        when(mockExchange.getRequestMethod()).thenReturn("GET");
+        // Create a JSON request body with missing movieId
         JSONObject requestBody = new JSONObject();
-        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
-        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
 
-        // Call the handle method
-        computeBaconPath.handle(mockExchange);
+        HttpExchangeMock exchange = new HttpExchangeMock("GET", "/getMovie", requestBody.toString());
+        new GetMovie(db).handle(exchange);
 
-        // Verify the response status is 400
-        verify(mockExchange).sendResponseHeaders(eq(400), anyLong());
+        assertEquals(400, exchange.getResponseCode());
+
+        server.stop(0);
     }
 
-    public void testComputeBaconPathActorNotFound() throws IOException, JSONException {
-        // Mock the HTTP exchange
-        when(mockExchange.getRequestMethod()).thenReturn("GET");
+    public void testHasRelationshipPass() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/hasRelationship", new HasRelationship(db));
+        server.setExecutor(null); // creates a default executor
+        server.start();
+
+        // Create a JSON request body
         JSONObject requestBody = new JSONObject();
-        requestBody.put("actorId", "12345");
-        ByteArrayInputStream requestBodyStream = new ByteArrayInputStream(requestBody.toString().getBytes(StandardCharsets.UTF_8));
-        when(mockExchange.getRequestBody()).thenReturn(requestBodyStream);
+        requestBody.put("actorId", "1234");
+        requestBody.put("movieId", "5678");
 
-        // Mock the database session for actor existence
-        Result mockActorResult = mock(Result.class);
-        when(mockActorResult.hasNext()).thenReturn(false);
-        when(mockSession.run(eq("MATCH (a:Actor) WHERE a.actorId = $actorId RETURN a"), anyMap())).thenReturn(mockActorResult);
+        HttpExchangeMock exchange = new HttpExchangeMock("GET", "/hasRelationship", requestBody.toString());
+        new HasRelationship(db).handle(exchange);
 
-        // Call the handle method
-        computeBaconPath.handle(mockExchange);
+        assertEquals(200, exchange.getResponseCode());
 
-        // Verify the response status is 404
-        verify(mockExchange).sendResponseHeaders(eq(404), anyLong());
+        server.stop(0);
+    }
+
+    public void testHasRelationshipFail() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        server.createContext("/hasRelationship", new HasRelationship(db));
+        server.setExecutor(null); // creates a default executor
+        server.start();
+
+        // Create a JSON request body with missing actorId
+        JSONObject requestBody = new JSONObject();
+        requestBody.put("movieId", "5678");
+
+        HttpExchangeMock exchange = new HttpExchangeMock("GET", "/hasRelationship", requestBody.toString());
+        new HasRelationship(db).handle(exchange);
+
+        assertEquals(400, exchange.getResponseCode());
+
+        server.stop(0);
+    }
+
+    private class HttpExchangeMock extends HttpExchange {
+        private final String requestMethod;
+        private final String requestURI;
+        private final String requestBody;
+        private int responseCode;
+        private final Headers requestHeaders;
+        private final Headers responseHeaders;
+        private final ByteArrayOutputStream responseBody;
+
+        public HttpExchangeMock(String requestMethod, String requestURI, String requestBody) {
+            this.requestMethod = requestMethod;
+            this.requestURI = requestURI;
+            this.requestBody = requestBody;
+            this.requestHeaders = new Headers();
+            this.responseHeaders = new Headers();
+            this.responseBody = new ByteArrayOutputStream();
+        }
+
+        @Override
+        public Headers getRequestHeaders() {
+            return requestHeaders;
+        }
+
+        @Override
+        public Headers getResponseHeaders() {
+            return responseHeaders;
+        }
+
+        @Override
+        public URI getRequestURI() {
+            return URI.create(requestURI);
+        }
+
+        @Override
+        public String getRequestMethod() {
+            return requestMethod;
+        }
+
+        @Override
+        public HttpContext getHttpContext() {
+            return null;
+        }
+
+        @Override
+        public void close() {
+        }
+
+        @Override
+        public InputStream getRequestBody() {
+            return new ByteArrayInputStream(requestBody.getBytes());
+        }
+
+        @Override
+        public OutputStream getResponseBody() {
+            return responseBody;
+        }
+
+        @Override
+        public void sendResponseHeaders(int rCode, long responseLength) throws IOException {
+            this.responseCode = rCode;
+        }
+
+        @Override
+        public InetSocketAddress getRemoteAddress() {
+            return null;
+        }
+
+        @Override
+        public int getResponseCode() {
+            return responseCode;
+        }
+
+        @Override
+        public InetSocketAddress getLocalAddress() {
+            return null;
+        }
+
+        @Override
+        public Object getAttribute(String s) {
+            return null;
+        }
+
+        @Override
+        public void setAttribute(String s, Object o) {
+        }
+
+        @Override
+        public void setStreams(InputStream inputStream, OutputStream outputStream) {
+        }
+
+        @Override
+        public String getProtocol() {
+            return "HTTP/1.1";
+        }
+
+        @Override
+        public HttpPrincipal getPrincipal() {
+            return null;
+        }
     }
 }
