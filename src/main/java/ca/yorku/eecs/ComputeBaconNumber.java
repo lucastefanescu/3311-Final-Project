@@ -4,10 +4,11 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.Record;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -68,7 +69,7 @@ public class ComputeBaconNumber implements HttpHandler {
         Map<String, Object> map = Collections.singletonMap("actorId", actorId);
 
         try(Session session = driver.session()){
-            Result result = session.run(query, map);
+            StatementResult result = session.run(query, map);
             if(result.hasNext()){
                 return true;
             }else{
@@ -79,22 +80,25 @@ public class ComputeBaconNumber implements HttpHandler {
 
     private String findBaconPath(String actorId){
         String query = "MATCH (bacon:Actor {actorId: 'nm0000102'}), (actor:Actor {actorId: $actorId})\n" +
-                "OPTIONAL MATCH p=shortestPath((bacon)-[:ACTED_IN*]-(actor))\n" +
+                "WITH bacon, actor\n" +
+                "OPTIONAL MATCH p=(bacon)-[:ACTED_IN*]-(actor)\n" +
+                "WHERE bacon <> actor\n" +
                 "RETURN CASE \n" +
+                "           WHEN $actorId = 'nm0000102' THEN 0\n" +
                 "           WHEN p IS NULL THEN -1\n" +
                 "           ELSE length(p)/2 \n" +
                 "       END AS baconNumber";
 
         try(Session session = driver.session()){
             Map<String, Object> map = Collections.singletonMap("actorId", actorId);
-            Result result = session.run(query, map);
+            StatementResult result = session.run(query, map);
             if(result.hasNext()){
                 Record record = result.next();
                 if(record.get("baconNumber").asInt() == -1){
                     return "";
                 }else{
                     JSONObject jsonobject = new JSONObject();
-                    jsonobject.put("baconNumber", record.get("baconNumber"));
+                    jsonobject.put("baconNumber", record.get("baconNumber").asInt());
                     return jsonobject.toString();
                 }
             }

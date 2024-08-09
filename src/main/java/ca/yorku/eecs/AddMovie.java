@@ -4,9 +4,10 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Transaction;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -14,9 +15,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-/*
-    TODO: only add movies if they aren't in the db
- */
 public class AddMovie implements HttpHandler {
     private final Driver driver;
     private String movieId;
@@ -65,7 +63,7 @@ public class AddMovie implements HttpHandler {
         parameters.put("movieId", movieId);
 
         try(Session session = driver.session()){
-            session.executeWrite(tx -> tx.run(query, parameters).consume());
+            session.run(query,parameters);
             return 200;
         }catch(Exception e){
             e.printStackTrace();
@@ -78,7 +76,7 @@ public class AddMovie implements HttpHandler {
         Map<String, Object> map = Collections.singletonMap("movieId", movieId);
 
         try(Session session = driver.session()){
-            Result result = session.run(query, map);
+            StatementResult result = session.run(query, map);
             if(result.hasNext()){
                 return true;
             }else{

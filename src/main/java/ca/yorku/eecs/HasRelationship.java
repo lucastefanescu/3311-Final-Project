@@ -4,10 +4,11 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Record;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.Record;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -71,7 +72,7 @@ public class HasRelationship implements HttpHandler {
             map.put("movieId", movieId);
             map.put("actorId", actorId);
 
-            Result result = session.run(query, map);
+            StatementResult result = session.run(query, map);
             if(result.hasNext()){
                 Record record = result.next();
                 JSONObject jsonObject = new JSONObject(record.get("result").asMap());
@@ -91,7 +92,7 @@ public class HasRelationship implements HttpHandler {
         Map<String, Object> map = Collections.singletonMap("movieId", movieId);
 
         try(Session session = driver.session()){
-            Result result = session.run(query, map);
+            StatementResult result = session.run(query, map);
             if(result.hasNext()){
                 return true;
             }else{
@@ -104,7 +105,7 @@ public class HasRelationship implements HttpHandler {
         Map<String, Object> map = Collections.singletonMap("actorId", actorId);
 
         try(Session session = driver.session()){
-            Result result = session.run(query, map);
+            StatementResult result = session.run(query, map);
             if(result.hasNext()){
                 return true;
             }else{

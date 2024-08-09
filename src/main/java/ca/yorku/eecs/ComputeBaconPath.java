@@ -5,10 +5,11 @@ import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.Record;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -64,14 +65,26 @@ public class ComputeBaconPath implements HttpHandler {
         }
     }
 
-    private String retrieveBaconPath(String actorId) {
-        String query = "MATCH (bacon:Actor {actorId: 'nm0000102'}), (actor:Actor {actorId: $actorId}) " +
-                "OPTIONAL MATCH p=shortestPath((actor)-[:ACTED_IN*]-(bacon)) " +
-                "RETURN [n IN nodes(p) WHERE n:Actor | n.actorId] AS baconPath, p IS NOT NULL AS pathExists";
+    private String retrieveBaconPath(String actorId) throws JSONException {
+        if(actorId.equals("nm0000102")){
+            JSONObject jsonObject = new JSONObject().put("baconPath", "nm0000102");
+            return jsonObject.toString();
+        }
+        String query = "MATCH (bacon:Actor {actorId: 'nm0000102'}), (actor:Actor {actorId: $actorId})\n" +
+                "OPTIONAL MATCH p=shortestPath((actor)-[:ACTED_IN*]-(bacon))\n" +
+                "RETURN \n" +
+                "    [n IN nodes(p) |\n" +
+                "        CASE\n" +
+                "            WHEN n:Actor THEN n.actorId\n" +
+                "            WHEN n:Movie THEN n.movieId\n" +
+                "            ELSE null\n" +
+                "        END\n" +
+                "    ] AS baconPath,\n" +
+                "    p IS NOT NULL AS pathExists";
 
         try(Session session = driver.session()){
             Map<String, Object> map = Collections.singletonMap("actorId", actorId);
-            Result result = session.run(query, map);
+            StatementResult result = session.run(query, map);
             if(result.hasNext()){
                 Record record = result.next();
                 if (record.get("pathExists").asBoolean()) {
@@ -93,7 +106,7 @@ public class ComputeBaconPath implements HttpHandler {
         Map<String, Object> map = Collections.singletonMap("actorId", actorId);
 
         try(Session session = driver.session()){
-            Result result = session.run(query, map);
+            StatementResult result = session.run(query, map);
             if(result.hasNext()){
                 return true;
             }else{

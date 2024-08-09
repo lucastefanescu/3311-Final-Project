@@ -4,10 +4,11 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.neo4j.driver.Driver;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Session;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.Record;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -65,7 +66,7 @@ public class GetMovie implements HttpHandler {
         Map<String, Object> map = Collections.singletonMap("movieId", movieId);
 
         try(Session session = driver.session()){
-            Result result = session.run(query, map);
+            StatementResult result = session.run(query, map);
             if(result.hasNext()){
                 return true;
             }else{
@@ -81,7 +82,7 @@ public class GetMovie implements HttpHandler {
         Map map = Collections.singletonMap("movieId", movieId);
 
         try (Session session = driver.session()) {
-            Result result = session.run(query, map);
+            StatementResult result = session.run(query, map);
 
             if (result.hasNext()) {
                 System.out.println("hello");
