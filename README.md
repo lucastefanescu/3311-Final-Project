@@ -5,11 +5,11 @@ This project implements the backend for a service that computes the shortest pat
 # API Endpoints
   
 ## PUT Requests
-  1. /api/v1/addActor
+1. /api/v1/addActor
   
-      Description: Adds an actor node into the database.
-      Body Parameters: name (String), actorId (String)
-      Responses:
+  -Description: Adds an actor node into the database.
+  -Body Parameters: name (String), actorId (String)
+  -Responses:
           -200 OK - Successful add
           -400 BAD REQUEST - Bad request or actor already exists
           -500 INTERNAL SERVER ERROR - Unsuccessful operation
