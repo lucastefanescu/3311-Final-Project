@@ -34,35 +34,35 @@ This project implements the backend for a service that computes the shortest pat
     - 500 INTERNAL SERVER ERROR - Unsuccessful operation
   
   ## GET Requests
-  4. /api/v1/getActor
+- /api/v1/getActor
   
-      -Description: Checks if an actor exists in the database.
-      -Body Parameters: actorId (String)
-      -Responses:
-          -200 OK - Actor found
-          -400 BAD REQUEST - Bad request
-          -404 NOT FOUND - Actor not found
-          -500 INTERNAL SERVER ERROR - Unsuccessful operation
+  - Description: Checks if an actor exists in the database.
+  - Body Parameters: actorId (String)
+  - Responses:
+    - 200 OK - Actor found
+    - 400 BAD REQUEST - Bad request
+    - 404 NOT FOUND - Actor not found
+    - 500 INTERNAL SERVER ERROR - Unsuccessful operation
+
+  - /api/v1/getMovie
   
-  5. /api/v1/getMovie
+    - Description: Checks if a movie exists in the database.
+    - Body Parameters: movieId (String)
+    - Responses:
+      - 200 OK - Movie found
+      - 400 BAD REQUEST - Bad request
+      - 404 NOT FOUND - Movie not found
+      - 500 INTERNAL SERVER ERROR - Unsuccessful operation
   
-      -Description: Checks if a movie exists in the database.
-      -Body Parameters: movieId (String)
-      -Responses:
-          -200 OK - Movie found
-          -400 BAD REQUEST - Bad request
-          -404 NOT FOUND - Movie not found
-          -500 INTERNAL SERVER ERROR - Unsuccessful operation
+   - /api/v1/hasRelationship
   
-  6. /api/v1/hasRelationship
-  
-      -Description: Checks if there is a relationship between an actor and a movie.
-      -Body Parameters: movieId (String), actorId (String)
-      -Responses:
-          -200 OK - Relationship found
-          -400 BAD REQUEST - Bad request
-          -404 NOT FOUND - Actor or movie not found
-          -500 INTERNAL SERVER ERROR - Unsuccessful operation
+     - Description: Checks if there is a relationship between an actor and a movie.
+     - Body Parameters: movieId (String), actorId (String)
+     - Responses:
+       - 200 OK - Relationship found
+       - 400 BAD REQUEST - Bad request
+       - 404 NOT FOUND - Actor or movie not found
+       - 500 INTERNAL SERVER ERROR - Unsuccessful operation
   
   7. /api/v1/computeBaconNumber
   
