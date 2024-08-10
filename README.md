@@ -44,7 +44,7 @@ This project implements the backend for a service that computes the shortest pat
     - 404 NOT FOUND - Actor not found
     - 500 INTERNAL SERVER ERROR - Unsuccessful operation
 
-  - /api/v1/getMovie
+- /api/v1/getMovie
   
     - Description: Checks if a movie exists in the database.
     - Body Parameters: movieId (String)
