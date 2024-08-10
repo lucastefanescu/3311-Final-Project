@@ -2,9 +2,9 @@ Project Overview
 
 This project implements the backend for a service that computes the shortest path between Kevin Bacon and a given actor using shared movies. The solution uses Neo4j as the database management system and Java to query the database.
 
-#API Endpoints
+# API Endpoints
   
-##PUT Requests
+## PUT Requests
   1. /api/v1/addActor
   
       Description: Adds an actor node into the database.
@@ -33,7 +33,7 @@ This project implements the backend for a service that computes the shortest pat
           404 NOT FOUND - Actor or movie not found
           500 INTERNAL SERVER ERROR - Unsuccessful operation
   
-  ##GET Requests
+  ## GET Requests
   4. /api/v1/getActor
   
       Description: Checks if an actor exists in the database.
