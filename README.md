@@ -54,7 +54,7 @@ This project implements the backend for a service that computes the shortest pat
       - 404 NOT FOUND - Movie not found
       - 500 INTERNAL SERVER ERROR - Unsuccessful operation
   
-   - /api/v1/hasRelationship
+- /api/v1/hasRelationship
   
      - Description: Checks if there is a relationship between an actor and a movie.
      - Body Parameters: movieId (String), actorId (String)
@@ -64,7 +64,7 @@ This project implements the backend for a service that computes the shortest pat
        - 404 NOT FOUND - Actor or movie not found
        - 500 INTERNAL SERVER ERROR - Unsuccessful operation
   
-   - /api/v1/computeBaconNumber
+- /api/v1/computeBaconNumber
   
      - Description: Checks the Bacon number of an actor.
      - Body Parameters: actorId (String)
@@ -74,7 +74,7 @@ This project implements the backend for a service that computes the shortest pat
        - 404 NOT FOUND - Actor or path not found
        - 500 INTERNAL SERVER ERROR - Unsuccessful operation
   
-   - /api/v1/computeBaconPath
+- /api/v1/computeBaconPath
   
       - Description: Returns the shortest Bacon Path from the specified actor to Kevin Bacon.
       - Body Parameters: actorId (String)
