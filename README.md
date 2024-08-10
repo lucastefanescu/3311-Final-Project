@@ -5,33 +5,33 @@ This project implements the backend for a service that computes the shortest pat
 # API Endpoints
   
 ## PUT Requests
-1. /api/v1/addActor
+- /api/v1/addActor
   
   - Description: Adds an actor node into the database.
   - Body Parameters: name (String), actorId (String)
   - Responses:
-    -  200 OK - Successful add
-    -  400 BAD REQUEST - Bad request or actor already exists
-    -  500 INTERNAL SERVER ERROR - Unsuccessful operation
+    - 200 OK - Successful add
+    - 400 BAD REQUEST - Bad request or actor already exists
+    - 500 INTERNAL SERVER ERROR - Unsuccessful operation
   
-  2. /api/v1/addMovie
+- /api/v1/addMovie
   
-      -Description: Adds a movie node into the database.
-      -Body Parameters: name (String), movieId (String)
-      -Responses:
-          -200 OK - Successful add
-          -400 BAD REQUEST - Bad request or movie already exists
-          -500 INTERNAL SERVER ERROR - Unsuccessful operation
+  - Description: Adds a movie node into the database.
+  - Body Parameters: name (String), movieId (String)
+  - Responses:
+    - 200 OK - Successful add
+    - 400 BAD REQUEST - Bad request or movie already exists
+    - 500 INTERNAL SERVER ERROR - Unsuccessful operation
   
-  3. /api/v1/addRelationship
+- /api/v1/addRelationship
   
-      -Description: Adds an ACTED_IN relationship between an actor and a movie.
-      -Body Parameters: actorId (String), movieId (String)
-      -Responses:
-          -200 OK - Successful add
-          -400 BAD REQUEST - Bad request or relationship already exists
-          -404 NOT FOUND - Actor or movie not found
-          -500 INTERNAL SERVER ERROR - Unsuccessful operation
+  - Description: Adds an ACTED_IN relationship between an actor and a movie.
+  - Body Parameters: actorId (String), movieId (String)
+  - Responses:
+    - 200 OK - Successful add
+    - 400 BAD REQUEST - Bad request or relationship already exists
+    - 404 NOT FOUND - Actor or movie not found
+    - 500 INTERNAL SERVER ERROR - Unsuccessful operation
   
   ## GET Requests
   4. /api/v1/getActor
