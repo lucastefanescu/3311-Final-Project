@@ -64,25 +64,25 @@ This project implements the backend for a service that computes the shortest pat
        - 404 NOT FOUND - Actor or movie not found
        - 500 INTERNAL SERVER ERROR - Unsuccessful operation
   
-  7. /api/v1/computeBaconNumber
+   - /api/v1/computeBaconNumber
   
-      -Description: Checks the Bacon number of an actor.
-      -Body Parameters: actorId (String)
-      -Responses:
-          -200 OK - Bacon number found
-          -400 BAD REQUEST - Bad request
-          -404 NOT FOUND - Actor or path not found
-          -500 INTERNAL SERVER ERROR - Unsuccessful operation
+     - Description: Checks the Bacon number of an actor.
+     - Body Parameters: actorId (String)
+     - Responses:
+       - 200 OK - Bacon number found
+       - 400 BAD REQUEST - Bad request
+       - 404 NOT FOUND - Actor or path not found
+       - 500 INTERNAL SERVER ERROR - Unsuccessful operation
   
-  8. /api/v1/computeBaconPath
+   - /api/v1/computeBaconPath
   
-      -Description: Returns the shortest Bacon Path from the specified actor to Kevin Bacon.
-      -Body Parameters: actorId (String)
-      -Responses:
-          -200 OK - Path found
-          -400 BAD REQUEST - Bad request
-          -404 NOT FOUND - Actor or path not found
-          -500 INTERNAL SERVER ERROR - Unsuccessful operation
+      - Description: Returns the shortest Bacon Path from the specified actor to Kevin Bacon.
+      - Body Parameters: actorId (String)
+      - Responses:
+          - 200 OK - Path found
+          - 400 BAD REQUEST - Bad request
+          - 404 NOT FOUND - Actor or path not found
+          - 500 INTERNAL SERVER ERROR - Unsuccessful operation
   
   ## Technologies
     -Java
