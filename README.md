@@ -84,8 +84,8 @@ This project implements the backend for a service that computes the shortest pat
         - 404 NOT FOUND - Actor or path not found
         - 500 INTERNAL SERVER ERROR - Unsuccessful operation
   
-  ## Technologies
-    -Java
-    -Neo4j
-    -Maven
+## Technologies
+  -Java
+  -Neo4j
+  -Maven
 
