@@ -76,13 +76,13 @@ This project implements the backend for a service that computes the shortest pat
   
 - /api/v1/computeBaconPath
   
-      - Description: Returns the shortest Bacon Path from the specified actor to Kevin Bacon.
-      - Body Parameters: actorId (String)
-      - Responses:
-        - 200 OK - Path found
-        - 400 BAD REQUEST - Bad request
-        - 404 NOT FOUND - Actor or path not found
-        - 500 INTERNAL SERVER ERROR - Unsuccessful operation
+  - Description: Returns the shortest Bacon Path from the specified actor to Kevin Bacon.
+  - Body Parameters: actorId (String)
+  - Responses:
+    - 200 OK - Path found
+    - 400 BAD REQUEST - Bad request
+    - 404 NOT FOUND - Actor or path not found
+    - 500 INTERNAL SERVER ERROR - Unsuccessful operation
   
 ## Technologies
   -Java
