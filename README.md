@@ -1,8 +1,8 @@
 This project implements the backend for a service that computes the shortest path between Kevin Bacon and a given actor using shared movies. The solution uses Neo4j as the database management system and Java to query the database.
 ## Technologies
-  -Java
-  -Neo4j
-  -Maven
+  - Java
+  - Neo4j
+  - Maven
   
 ## API Endpoints
 
